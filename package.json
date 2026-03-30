@@ -1,21 +1,28 @@
 {
   "name": "tanjent",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "AI speaking journaling assistant",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "groq-sdk": "^1.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/musevi/tanjent.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/musevi/tanjent/issues"
-  },
-  "homepage": "https://github.com/musevi/tanjent#readme"
+  "license": "ISC"
 }
