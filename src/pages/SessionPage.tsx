@@ -24,10 +24,8 @@ export default function SessionPage() {
     );
   }, []);
 
-  const { state, startRecording, stopRecording, stopAudio } = useVoiceJournal(
-    id!,
-    onTurnComplete
-  );
+  const { state, autoMode, setAutoMode, startRecording, stopRecording, stopAudio } =
+    useVoiceJournal(id!, onTurnComplete);
 
   useEffect(() => {
     getSession(id!).then((r) => setSession(r.data));
@@ -102,9 +100,19 @@ export default function SessionPage() {
 
       {isActive && (
         <div className="session-actions">
+          <label className="auto-mode-toggle">
+            <input
+              type="checkbox"
+              checked={autoMode}
+              onChange={(e) => setAutoMode(e.target.checked)}
+              disabled={state.status !== 'idle'}
+            />
+            Auto mode (hands-free)
+          </label>
           <div className="mic-area">
             <MicButton
               status={state.status}
+              autoMode={autoMode}
               onStart={startRecording}
               onStop={stopRecording}
             />
