@@ -22,13 +22,64 @@ body {
   min-height: 100vh;
 }
 
+/* ─── Nav ─────────────────────────────────────────────────── */
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.nav-brand {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.nav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.nav-links a:hover {
+  color: var(--text);
+}
+
+.nav-logout {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.nav-logout:hover {
+  color: var(--text);
+}
+
+/* ─── App container ───────────────────────────────────────── */
 .app {
   max-width: 640px;
   margin: 0 auto;
   padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .app-header {
@@ -43,7 +94,7 @@ body {
   letter-spacing: -0.03em;
 }
 
-/* Status badge */
+/* ─── Status badge ────────────────────────────────────────── */
 .status-badge {
   font-size: 0.75rem;
   font-weight: 600;
@@ -75,7 +126,13 @@ body {
   color: var(--accent-red);
 }
 
-/* Mic button */
+.status-badge--completed {
+  background: #1a2a1a;
+  border-color: #3a6a3a;
+  color: #7ac97a;
+}
+
+/* ─── Mic button ──────────────────────────────────────────── */
 .mic-area {
   display: flex;
   justify-content: center;
@@ -112,7 +169,7 @@ body {
   50%       { box-shadow: 0 0 0 12px rgba(224, 82, 82, 0); }
 }
 
-/* Panels */
+/* ─── Panels ──────────────────────────────────────────────── */
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -144,6 +201,11 @@ body {
   border-left: 3px solid var(--accent);
 }
 
+.panel--summary {
+  border-left: 3px solid #3a6a3a;
+  background: #111a11;
+}
+
 .stop-audio-button {
   align-self: flex-start;
   margin-top: 0.4rem;
@@ -161,7 +223,7 @@ body {
   color: var(--text);
 }
 
-/* Error */
+/* ─── Error ───────────────────────────────────────────────── */
 .error-banner {
   background: #2a1010;
   border: 1px solid var(--accent-red);
@@ -169,4 +231,200 @@ body {
   border-radius: 8px;
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
+}
+
+/* ─── Session actions ─────────────────────────────────────── */
+.session-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.complete-button {
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.complete-button:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.complete-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.back-button {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.back-button:hover {
+  color: var(--text);
+}
+
+/* ─── Session card ────────────────────────────────────────── */
+.session-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.session-card:hover {
+  border-color: var(--accent);
+  background: #1f1a2e;
+}
+
+.session-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.session-card__date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.session-card__summary {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ─── Auth page ───────────────────────────────────────────── */
+.auth-page {
+  max-width: 400px;
+  margin: 6rem auto 2rem;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.auth-title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-align: center;
+}
+
+.auth-subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: -1rem;
+}
+
+.auth-tabs {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.auth-tab--active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-form input {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.auth-form input:focus {
+  border-color: var(--accent);
+}
+
+.auth-submit {
+  padding: 0.85rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.25rem;
+  transition: opacity 0.15s;
+}
+
+.auth-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Utility ─────────────────────────────────────────────── */
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  color: var(--text-muted);
 }

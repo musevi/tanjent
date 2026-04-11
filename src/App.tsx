@@ -1,39 +1,53 @@
-import { useVoiceJournal } from './hooks/useVoiceJournal';
-import { MicButton } from './components/MicButton';
-import { StatusBadge } from './components/StatusBadge';
-import { TranscriptPanel } from './components/TranscriptPanel';
-import { ResponsePanel } from './components/ResponsePanel';
+import { Navigate, Route, Routes, Link } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
+import { PrivateRoute } from './components/PrivateRoute';
+import LoginPage from './pages/LoginPage';
+import HomePage from './pages/HomePage';
+import SessionPage from './pages/SessionPage';
+import HistoryPage from './pages/HistoryPage';
 
 export default function App() {
-  const { state, startRecording, stopRecording, stopAudio } = useVoiceJournal();
+  const { user, logout } = useAuth();
 
   return (
-    <main className="app">
-      <header className="app-header">
-        <h1>Tanjent</h1>
-        <StatusBadge status={state.status} />
-      </header>
-
-      <div className="mic-area">
-        <MicButton
-          status={state.status}
-          onStart={startRecording}
-          onStop={stopRecording}
-        />
-      </div>
-
-      {state.errorMessage && (
-        <div className="error-banner" role="alert">
-          {state.errorMessage}
-        </div>
+    <>
+      {user && (
+        <nav className="app-nav">
+          <Link to="/" className="nav-brand">Tanjent</Link>
+          <div className="nav-links">
+            <Link to="/history">History</Link>
+            <button onClick={logout} className="nav-logout">Sign out</button>
+          </div>
+        </nav>
       )}
-
-      <TranscriptPanel transcript={state.transcript} />
-      <ResponsePanel
-        response={state.response}
-        status={state.status}
-        onStopAudio={stopAudio}
-      />
-    </main>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <HomePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/session/:id"
+          element={
+            <PrivateRoute>
+              <SessionPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <PrivateRoute>
+              <HistoryPage />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

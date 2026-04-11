@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { groq } from '../groqClient';
-import { truncateForTTS } from '../utils/truncateForTTS';
+import { sendTurn, MessageOut } from '../api/sessions';
 
 export type JournalStatus =
   | 'idle'
@@ -17,7 +16,10 @@ export interface JournalState {
   errorMessage: string | null;
 }
 
-export function useVoiceJournal() {
+export function useVoiceJournal(
+  sessionId: string,
+  onTurnComplete?: (userMsg: MessageOut, assistantMsg: MessageOut) => void
+) {
   const [state, setState] = useState<JournalState>({
     status: 'idle',
     transcript: '',
@@ -54,7 +56,6 @@ export function useVoiceJournal() {
       return;
     }
 
-    // Prefer webm/opus; Safari falls back to audio/mp4
     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus'
       : MediaRecorder.isTypeSupported('audio/webm')
@@ -75,7 +76,7 @@ export function useVoiceJournal() {
     };
 
     recorder.start();
-  }, []);
+  }, [sessionId]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'recording') {
@@ -88,75 +89,43 @@ export function useVoiceJournal() {
     try {
       setStatus('transcribing');
 
-      const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      const audioFile = new File([audioBlob], `recording.${extension}`, {
-        type: mimeType,
-      });
+      const { data } = await sendTurn(sessionId, audioBlob, mimeType);
 
-      const transcription = await groq.audio.transcriptions.create({
-        file: audioFile,
-        model: 'whisper-large-v3',
-        response_format: 'json',
-        language: 'en',
-      });
+      setState((prev) => ({
+        ...prev,
+        transcript: data.transcript,
+        response: data.response_text,
+        status: 'speaking',
+      }));
 
-      const transcript = transcription.text.trim();
-      setState((prev) => ({ ...prev, transcript, status: 'thinking' }));
+      await playBase64Audio(data.audio_base64);
 
-      await runChat(transcript);
+      // Notify parent with the newly saved messages (approximate — IDs not known until DB sync)
+      if (onTurnComplete) {
+        const now = new Date().toISOString();
+        onTurnComplete(
+          { id: `live-user-${Date.now()}`, session_id: sessionId, role: 'user', content: data.transcript, created_at: now },
+          { id: `live-asst-${Date.now()}`, session_id: sessionId, role: 'assistant', content: data.response_text, created_at: now }
+        );
+      }
     } catch (err) {
       setState((prev) => ({
         ...prev,
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'Transcription failed.',
+        errorMessage:
+          err instanceof Error ? err.message : 'Turn failed. Check the backend.',
       }));
     }
   };
 
-  const runChat = async (transcript: string) => {
-    try {
-      const chatCompletion = await groq.chat.completions.create({
-        model: 'openai/gpt-oss-20b',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a thoughtful journaling companion. ' +
-              "Respond to the user's journal entry with a brief, empathetic reflection " +
-              'or gentle question. Keep responses concise — 1-3 sentences.',
-          },
-          { role: 'user', content: transcript },
-        ],
-        max_tokens: 200,
-        temperature: 0.8,
-      });
-
-      const response = chatCompletion.choices[0]?.message?.content ?? '';
-      setState((prev) => ({ ...prev, response, status: 'speaking' }));
-
-      await runTTS(response);
-    } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'LLM call failed.',
-      }));
-    }
-  };
-
-  const runTTS = async (text: string) => {
-    try {
-      const ttsInput = truncateForTTS(text);
-
-      const speechResponse = await groq.audio.speech.create({
-        model: 'canopylabs/orpheus-v1-english',
-        voice: 'hannah',
-        input: ttsInput,
-        response_format: 'wav',
-      });
-
-      const arrayBuffer = await speechResponse.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
+  const playBase64Audio = async (base64: string): Promise<void> => {
+    return new Promise((resolve) => {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
       objectUrlRef.current = url;
 
@@ -167,6 +136,7 @@ export function useVoiceJournal() {
         setStatus('idle');
         URL.revokeObjectURL(url);
         objectUrlRef.current = null;
+        resolve();
       };
 
       audio.onerror = () => {
@@ -175,16 +145,18 @@ export function useVoiceJournal() {
           status: 'error',
           errorMessage: 'Audio playback failed.',
         }));
+        resolve();
       };
 
-      await audio.play();
-    } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        status: 'error',
-        errorMessage: err instanceof Error ? err.message : 'TTS failed.',
-      }));
-    }
+      audio.play().catch(() => {
+        setState((prev) => ({
+          ...prev,
+          status: 'error',
+          errorMessage: 'Audio playback failed.',
+        }));
+        resolve();
+      });
+    });
   };
 
   const stopAudio = useCallback(() => {
