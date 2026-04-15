@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +32,7 @@ class Session(Base):
     completed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    embedding = mapped_column(Vector(1536), nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="sessions")
     messages: Mapped[list["Message"]] = relationship(

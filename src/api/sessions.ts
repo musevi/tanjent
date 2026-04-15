@@ -27,6 +27,10 @@ export interface SessionListItem {
   message_count: number;
 }
 
+export interface SearchResultItem extends SessionListItem {
+  relevance: number;
+}
+
 export interface TurnResponse {
   transcript: string;
   response_text: string;
@@ -53,3 +57,6 @@ export const completeSession = (id: string) =>
 
 export const deleteSession = (id: string) =>
   apiClient.delete(`/sessions/${id}`);
+
+export const searchSessions = (q: string) =>
+  apiClient.get<SearchResultItem[]>('/sessions/search', { params: { q } });

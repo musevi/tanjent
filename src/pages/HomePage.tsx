@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createSession, getSessions, SessionListItem } from '../api/sessions';
+import { createSession, deleteSession, getSessions, SessionListItem } from '../api/sessions';
 import { SessionCard } from '../components/SessionCard';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,6 +22,12 @@ export default function HomePage() {
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete this session? This cannot be undone.')) return;
+    await deleteSession(id);
+    setSessions((prev) => prev.filter((s) => s.id !== id));
   };
 
   const recentSessions = sessions.slice(0, 5);
@@ -49,6 +55,7 @@ export default function HomePage() {
               key={s.id}
               session={s}
               onClick={() => navigate(`/session/${s.id}`)}
+              onDelete={() => handleDelete(s.id)}
             />
           ))}
         </section>

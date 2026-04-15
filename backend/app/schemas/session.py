@@ -27,3 +27,7 @@ class SessionListItem(BaseModel):
     started_at: datetime
     completed_at: Optional[datetime]
     message_count: int = 0
+
+
+class SearchResultItem(SessionListItem):
+    relevance: float = 0.0

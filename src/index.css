@@ -296,7 +296,33 @@ body {
   color: var(--text);
 }
 
+/* ─── Search ─────────────────────────────────────────────── */
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
 /* ─── Session card ────────────────────────────────────────── */
+.session-card-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .session-card {
   width: 100%;
   background: var(--surface);
@@ -332,6 +358,30 @@ body {
   font-size: 0.9rem;
   color: var(--text);
   line-height: 1.5;
+}
+
+.session-card__delete {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.3em 0.7em;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.session-card-wrapper:hover .session-card__delete {
+  opacity: 1;
+}
+
+.session-card__delete:hover {
+  color: var(--accent-red);
+  border-color: var(--accent-red);
 }
 
 /* ─── Auth page ───────────────────────────────────────────── */

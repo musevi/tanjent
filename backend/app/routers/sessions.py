@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,9 +12,9 @@ from app.deps import get_current_user
 from app.models.message import Message, MessageRole
 from app.models.session import Session, SessionStatus
 from app.models.user import User
-from app.schemas.session import SessionListItem, SessionOut
+from app.schemas.session import SearchResultItem, SessionListItem, SessionOut
 from app.schemas.turn import TurnResponse
-from app.services import groq_service
+from app.services import embedding_service, groq_service
 
 router = APIRouter()
 
@@ -65,6 +65,49 @@ async def list_sessions(
             )
         )
     return result
+
+
+@router.get("/search", response_model=list[SearchResultItem])
+async def search_sessions(
+    q: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not q.strip():
+        return []
+
+    query_embedding = await embedding_service.embed(q.strip())
+
+    stmt = (
+        select(
+            Session,
+            func.count(Message.id).label("message_count"),
+            Session.embedding.cosine_distance(query_embedding).label("distance"),
+        )
+        .outerjoin(Message, Message.session_id == Session.id)
+        .where(
+            Session.user_id == current_user.id,
+            Session.embedding.isnot(None),
+        )
+        .group_by(Session.id)
+        .order_by("distance")
+        .limit(20)
+    )
+    rows = await db.execute(stmt)
+    results = []
+    for session, count, distance in rows:
+        results.append(
+            SearchResultItem(
+                id=session.id,
+                status=session.status,
+                summary=session.summary,
+                started_at=session.started_at,
+                completed_at=session.completed_at,
+                message_count=count,
+                relevance=round(1 - distance, 4),
+            )
+        )
+    return results
 
 
 @router.get("/{session_id}", response_model=SessionOut)
@@ -178,6 +221,13 @@ async def complete_session(
     else:
         summary = "Empty session."
 
+    # Generate embedding from summary + conversation for semantic search
+    embed_text = f"{summary}\n\n{conversation_text}" if session.messages else summary
+    try:
+        session.embedding = await embedding_service.embed(embed_text)
+    except Exception:
+        pass  # non-critical — session still completes without embedding
+
     session.status = SessionStatus.completed
     session.summary = summary
     session.completed_at = datetime.now(timezone.utc)
@@ -200,12 +250,12 @@ async def delete_session(
     current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Session).where(
+        select(Session.id).where(
             Session.id == session_id, Session.user_id == current_user.id
         )
     )
-    session = result.scalar_one_or_none()
-    if not session:
+    if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Session not found")
-    await db.delete(session)
+    await db.execute(delete(Message).where(Message.session_id == session_id))
+    await db.execute(delete(Session).where(Session.id == session_id))
     await db.commit()
