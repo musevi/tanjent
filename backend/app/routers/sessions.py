@@ -1,8 +1,11 @@
 import base64
+import logging
 import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -151,6 +154,7 @@ async def turn(
 
     # STT
     transcript = await groq_service.transcribe(audio_bytes, filename)
+    logger.info("STT transcript len=%d content=%r", len(transcript), transcript[:120])
 
     # LLM with full conversation history
     history = [
@@ -162,7 +166,14 @@ async def turn(
         + history
         + [{"role": "user", "content": transcript}]
     )
-    response_text = await groq_service.chat(messages_for_llm)
+    try:
+        response_text = await groq_service.chat(messages_for_llm)
+    except Exception:
+        logger.exception("Chat call failed")
+        response_text = ""
+    logger.info("LLM response len=%d content=%r", len(response_text), response_text[:120])
+    if not response_text.strip():
+        response_text = "I'm here. Tell me more."
 
     # TTS
     audio_wav_bytes = await groq_service.tts(response_text)
@@ -209,15 +220,22 @@ async def complete_session(
         )
         summary_messages = [
             {
+                "role": "system",
+                "content": groq_service.SUMMARY_SYSTEM_PROMPT,
+            },
+            {
                 "role": "user",
                 "content": (
-                    "Summarize this journaling session in 2-3 sentences, "
-                    "capturing the main themes and emotional tone:\n\n"
+                    "Write a 2-3 sentence summary of this journal conversation. "
+                    "Address the journaler as 'you' not 'the user'. "
+                    "Be specific about what was discussed and the emotional tone.\n\n"
                     + conversation_text
                 ),
-            }
+            },
         ]
-        summary = await groq_service.chat(summary_messages)
+        summary = await groq_service.chat(summary_messages, max_tokens=400)
+        if not summary.strip():
+            summary = "Journal session completed."
     else:
         summary = "Empty session."
 

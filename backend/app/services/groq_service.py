@@ -5,8 +5,11 @@ asyncio.to_thread() to avoid blocking the async event loop.
 """
 
 import asyncio
+import logging
 
 from groq import Groq
+
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 
@@ -15,9 +18,17 @@ groq_client = Groq(api_key=settings.GROQ_API_KEY)
 _TTS_MAX_CHARS = 200
 
 SYSTEM_PROMPT = (
-    "You are a thoughtful journaling companion. "
-    "Respond to the user's journal entry with a brief, empathetic reflection "
-    "or gentle question. Keep responses concise — 1-3 sentences."
+    "You are Tanjent, a voice journaling companion. Your reply will be spoken "
+    "aloud, so keep it to one or two short sentences. No lists, no markdown, "
+    "no filler phrases like 'great point' or 'thanks for sharing'. Early in a "
+    "conversation ask one open question. Later, reflect back patterns you "
+    "notice. Typically ask follow-up questions. Match the user's emotional tone. "
+    "You are a thoughtful friend, not a therapist."
+)
+
+SUMMARY_SYSTEM_PROMPT = (
+    "You are a helpful assistant. Your only job is to write a short, "
+    "specific summary of a conversation. Do not greet the user or ask questions."
 )
 
 
@@ -47,14 +58,17 @@ def _transcribe_sync(audio_bytes: bytes, filename: str) -> str:
     return result.text.strip()
 
 
-def _chat_sync(messages: list[dict]) -> str:
+def _chat_sync(messages: list[dict], max_tokens: int = 200) -> str:
     completion = groq_client.chat.completions.create(
         model="openai/gpt-oss-20b",
         messages=messages,
-        max_tokens=200,
-        temperature=0.8,
+        max_tokens=max_tokens,
+        temperature=0.6,
     )
-    return completion.choices[0].message.content or ""
+    result = completion.choices[0].message.content or ""
+    finish = completion.choices[0].finish_reason
+    logger.info("chat finish_reason=%s len=%d content=%r", finish, len(result), result[:120])
+    return result
 
 
 def _tts_sync(text: str) -> bytes:
@@ -72,8 +86,8 @@ async def transcribe(audio_bytes: bytes, filename: str) -> str:
     return await asyncio.to_thread(_transcribe_sync, audio_bytes, filename)
 
 
-async def chat(messages: list[dict]) -> str:
-    return await asyncio.to_thread(_chat_sync, messages)
+async def chat(messages: list[dict], max_tokens: int = 200) -> str:
+    return await asyncio.to_thread(_chat_sync, messages, max_tokens)
 
 
 async def tts(text: str) -> bytes:
