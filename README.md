@@ -2,9 +2,11 @@
 
 AI speaking journaling assistant
 
+![sessionpage](./session.png)
+
 ## Summary
 
-It's hard to find time to journal. It takes even longer to put the ideas on your head onto the page. Tanjent is an AI jounal assistant you talk to, and creates your journal entries with a simple discussion. Now you can journal as you cook dinner, do laundry, etc, no longer limited by your writing speed.
+It's hard to find time to journal. It takes even longer to put the ideas on your head onto the page. Tanjent is an AI jounal assistant you talk to, and creates your journal entries with a simple discussion. Now you can journal as you cook dinner, do laundry, etc, and go off on your own Tanjent™.
 
 ## System Design
 
